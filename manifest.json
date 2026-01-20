@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Quiet Quotes",
+  "version": "1.0.0",
+  "description": "A premium minimalist quote extension that transforms every new tab into a moment of reflection.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": [
+    "storage"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://chat.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["content_scripts/chat_scraper.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "assets/fonts/*.woff2",
+        "assets/grain.png"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
