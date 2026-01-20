@@ -19,7 +19,7 @@ A minimalist, aesthetically pleasing Chrome New Tab extension that serves daily 
 2. Open Google Chrome and navigate to `chrome://extensions`.
 3. Enable **Developer mode** in the top-right corner.
 4. Click **Load unpacked**.
-5. Select the `quiet-quotes-extension` folder from this repository.
+5. Select the `QuietTab` folder from this repository.
 6. Open a new tab to see it in action!
 
 ## Customization
