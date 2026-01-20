@@ -27,6 +27,20 @@ A minimalist, aesthetically pleasing Chrome New Tab extension that serves daily 
 - Click the **Settings** gear icon (bottom right) to toggle Context Awareness or change font preferences.
 - The extension adapts to your browsing habits locally to show "General", "Coding", or "Design" quotes.
 
+## Smart Context Features
+
+The extension automatically detects your focus area (Coding, Creative, Productivity, etc.) by analyzing your interactions with major AI platforms.
+
+**Supported Platforms:**
+- **ChatGPT** (chatgpt.com)
+- **Claude** (claude.ai)
+- **Google Gemini** (gemini.google.com)
+
+**Requirements for Context Mode:**
+1. You must be **logged in** and actively using one of the supported platforms in a tab.
+2. The extension relies on local page analysis, so the AI tab must be **open**.
+3. **Troubleshooting**: If the quote context doesn't update, try **refreshing the AI web page** to re-initialize the detection script.
+
 ## Development
 
 - Built with vanilla HTML/CSS/JS (Manifest V3).
