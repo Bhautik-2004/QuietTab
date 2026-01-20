@@ -291,3 +291,18 @@ blockquote {
     animation-delay: 0.1s;
 }
 
+
+/* Context/Theme Indicator */
+#context-indicator {
+    position: fixed;
+    bottom: 2rem;
+    left: 2rem;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    letter-spacing: 0.05em;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+

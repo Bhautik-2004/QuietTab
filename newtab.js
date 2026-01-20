@@ -127,7 +127,7 @@ function applyRandomTheme(root) {
         root.style.setProperty('--text-shadow', '0 4px 12px rgba(0,0,0,0.3)');
     }
     
-    console.log(`[Quiet Quotes] Applied theme: ${theme.name}`);
+    // console.log(`[Quiet Quotes] Applied theme: ${theme.name}`);
 }
 
 /**
@@ -159,7 +159,7 @@ function getContext() {
 
         chrome.storage.local.get(['current_context_category'], (result) => {
             currentCategory = result.current_context_category || 'general';
-            console.log(`[Quiet Quotes] Mode: ${currentCategory}`);
+            // console.log(`[Quiet Quotes] Mode: ${currentCategory}`);
             resolve(currentCategory);
         });
     });
@@ -219,12 +219,14 @@ function selectQuote() {
     const randomIndex = Math.floor(Math.random() * relevantQuotes.length);
     const selected = relevantQuotes[randomIndex];
     
-    // DEBUG: Show context method
-    console.log(`[Quiet Quotes] Selected: "${selected.Quote.substring(0,20)}..." | Context: ${currentCategory} | Filtered set: ${relevantQuotes.length}`);
-    
-    // Optional: Add visible debug text in development
-    const debugEl = document.getElementById('debug-indicator');
-    if(debugEl) debugEl.textContent = `Context: ${currentCategory} (Found ${relevantQuotes.length} matches)`;
+    // Context Indicator
+    const contextEl = document.getElementById('context-indicator');
+    if (contextEl && currentCategory !== 'general') {
+        const formattedCategory = currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
+        contextEl.textContent = `Inspired by your interest in ${formattedCategory}`;
+    } else if (contextEl) {
+        contextEl.textContent = ''; // Clean look for general/default
+    }
     
     return selected;
 }

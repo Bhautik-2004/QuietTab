@@ -35,32 +35,9 @@
 
     // --- DEBUGGING HELPER ---
     function showDebugToast(category, textSnippet) {
-        const id = 'quiet-quotes-debug-toast';
-        let toast = document.getElementById(id);
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = id;
-            toast.style.cssText = `
-                position: fixed; bottom: 20px; right: 20px; 
-                background: #222; color: #fff; padding: 12px 20px; 
-                border-radius: 8px; z-index: 99999; font-family: sans-serif;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid #444;
-                font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none;
-            `;
-            document.body.appendChild(toast);
-        }
-        
-        toast.innerHTML = `
-            <div style="font-weight:bold; color:#f472b6; margin-bottom:4px;">Quiet Quotes Scraper</div>
-            <div>Category detected: <span style="color:#4CAF50">${category}</span></div>
-            <div style="font-size:11px; color:#888; margin-top:4px; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">"${textSnippet}"</div>
-        `;
-        
-        // Flash toast
-        toast.style.opacity = '1';
-        setTimeout(() => { toast.style.opacity = '0'; }, 3000);
-        
-        console.log(`[Quiet Quotes] 🟢 Categorized as: "${category}" based on text length: ${textSnippet.length}`);
+        // Debugging disabled for production
+        // const id = 'quiet-quotes-debug-toast';
+        // ... implementation removed ...
     }
 
     // 1. Detect Site & Selectors (Improved)
