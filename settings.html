@@ -4,74 +4,133 @@
     <meta charset="UTF-8">
     <title>Quiet Quotes Settings</title>
     <link rel="stylesheet" href="settings.css">
-    <style>
-        body { background: #111; color: #fff; font-family: sans-serif; padding: 20px; box-sizing: border-box; }
-        h2 { font-size: 1.2rem; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-        .control-group { margin-bottom: 25px; }
-        label { display: block; margin-bottom: 8px; font-size: 0.9rem; color: #ccc; }
-        select, input[type="radio"] { margin-right: 5px; }
-        select { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; }
-        .radio-group { display: flex; gap: 15px; }
-        .radio-option { display: flex; align-items: center; cursor: pointer; }
-        
-        /* Toggle Switch */
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #444; transition: .4s; border-radius: 20px; }
-        .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: #f472b6; }
-        input:checked + .slider:before { transform: translateX(20px); }
-        .toggle-row { display: flex; justify-content: space-between; align-items: center; }
-
-        button#save-btn { width: 100%; padding: 10px; background: #f472b6; border: none; color: #fff; font-weight: bold; cursor: pointer; border-radius: 4px; margin-top: 10px; transition: opacity 0.3s; }
-        button#save-btn:hover { opacity: 0.9; }
-        .status { text-align: center; color: #4CAF50; font-size: 0.8rem; margin-top: 10px; opacity: 0; transition: opacity 0.5s; }
-    </style>
 </head>
 <body>
-    <h2>Preferences</h2>
+    <div class="app-container">
+        
+        <!-- Tab Content Area -->
+        <main class="content-area">
+            
+            <!-- SHAPE TAB -->
+            <div id="panel-shape" class="panel active">
+                <div class="control-group">
+                    <label class="section-label">Type</label>
+                    <div class="segmented-control">
+                        <label>
+                            <input type="radio" name="bg-type" value="plane" checked>
+                            <span class="segment-btn">Plane</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bg-type" value="sphere">
+                            <span class="segment-btn">Sphere</span>
+                        </label>
+                        <label>
+                            <input type="radio" name="bg-type" value="water">
+                            <span class="segment-btn">Water</span>
+                        </label>
+                    </div>
+                </div>
 
-    <div class="control-group">
-        <label for="font-family">Typography Style</label>
-        <select id="font-family">
-            <option value="serif">Playfair Display (Serif)</option>
-            <option value="sans">Inter (Sans-Serif)</option>
-            <option value="mono">Monospace (Code)</option>
-            <option value="helvetica">Helvetica (Sans)</option>
-            <option value="garamond">Apple Garamond (Serif)</option>
-            <option value="cormorant">Cormorant Garamond (Serif)</option>
-        </select>
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Noise Strength</label>
+                        <span class="value-display" id="val-noise-strength">0.4</span>
+                    </div>
+                    <input type="range" id="noise-strength" min="0" max="100" value="40" class="slider">
+                </div>
+
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Noise Density</label>
+                        <span class="value-display" id="val-noise-density">1.3</span>
+                    </div>
+                    <input type="range" id="noise-density" min="0" max="50" step="1" value="13" class="slider">
+                </div>
+            </div>
+
+            <!-- COLORS TAB -->
+            <div id="panel-colors" class="panel">
+                <div class="control-group">
+                    <label class="section-label">Palette</label>
+                    <div class="color-picker-row">
+                        <div class="item">
+                             <input type="color" id="color-1" value="#ff5005">
+                             <span>Color 1</span>
+                        </div>
+                        <div class="item">
+                             <input type="color" id="color-2" value="#dbba95">
+                             <span>Color 2</span>
+                        </div>
+                        <div class="item">
+                             <input type="color" id="color-3" value="#d0bce1">
+                             <span>Color 3</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MOTION TAB -->
+            <div id="panel-motion" class="panel">
+                <div class="control-group">
+                    <div class="label-row">
+                        <label>Speed</label>
+                        <span class="value-display" id="val-speed">0.4</span>
+                    </div>
+                    <input type="range" id="speed" min="0" max="100" value="40" class="slider">
+                </div>
+            </div>
+
+            <!-- VIEW/TEXT TAB -->
+            <div id="panel-view" class="panel">
+                <div class="control-group">
+                    <label for="font-family">Typography</label>
+                    <select id="font-family" class="styled-select">
+                        <option value="serif">Playfair Display (Serif)</option>
+                        <option value="sans">Inter (Sans)</option>
+                        <option value="mono">Fira/Space Mono (Mono)</option>
+                        <option value="cormorant">Cormorant (Elegant)</option>
+                        <option value="lora">Lora (Readable)</option>
+                        <option value="montserrat">Montserrat (Modern)</option>
+                        <option value="satisfy">Satisfy (Handwritten)</option>
+                    </select>
+                </div>
+
+                <div class="control-group toggle-row">
+                    <label for="show-seconds">Show Seconds</label>
+                    <label class="switch">
+                        <input type="checkbox" id="show-seconds">
+                        <span class="slider-toggle"></span>
+                    </label>
+                </div>
+
+                <div class="control-group toggle-row">
+                    <label for="show-date">Show Date</label>
+                    <label class="switch">
+                        <input type="checkbox" id="show-date">
+                        <span class="slider-toggle"></span>
+                    </label>
+                </div>
+                
+                 <div class="control-group toggle-row">
+                    <label for="context-mode">Context Aware Quote</label>
+                    <label class="switch">
+                        <input type="checkbox" id="context-mode" checked>
+                        <span class="slider-toggle"></span>
+                    </label>
+                </div>
+            </div>
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-target="panel-shape">Shape</button>
+            <button class="nav-btn" data-target="panel-colors">Colors</button>
+            <button class="nav-btn" data-target="panel-motion">Motion</button>
+            <button class="nav-btn" data-target="panel-view">View</button>
+        </nav>
+
+        <div id="status-message">Saved</div>
     </div>
-
-    <div class="control-group">
-        <label>Base Size</label>
-        <div class="radio-group">
-            <label class="radio-option">
-                <input type="radio" name="font-size" value="m"> Medium
-            </label>
-            <label class="radio-option">
-                <input type="radio" name="font-size" value="l"> Large
-            </label>
-            <label class="radio-option">
-                <input type="radio" name="font-size" value="xl"> Hero
-            </label>
-        </div>
-    </div>
-
-    <div class="control-group toggle-row">
-        <div>
-            <label style="margin:0">Context Awareness</label>
-            <small style="color:#666; font-size: 0.75rem;">Adapt quotes to your activity</small>
-        </div>
-        <label class="switch">
-            <input type="checkbox" id="context-mode">
-            <span class="slider"></span>
-        </label>
-    </div>
-
-    <button id="save-btn">Save Changes</button>
-    <div id="status" class="status">Saved!</div>
-
     <script src="settings.js"></script>
 </body>
 </html>

@@ -1,30 +1,45 @@
 /* Reset & Base */
 :root {
-    /* Dynamic Theme Variables - Set by JS */
-    --bg-start: #0f172a;
-    --bg-mid: #2e1065;
-    --bg-end: #020617;
+    /* Dynamic Theme Variables - Controlled by JS */
+    --bg-color-1: #ff5005;
+    --bg-color-2: #dbba95;
+    --bg-color-3: #d0bce1;
     
-    /* Text colors now derived from brightness */
+    --noise-opacity: 0.15; /* Increased visibility */
+    --anim-speed: 20s;
+    
+    /* Text colors */
     --text-primary: rgba(255, 255, 255, 0.95);
     --text-secondary: rgba(255, 255, 255, 0.7);
-    --text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    --text-shadow: 0 4px 12px rgba(0,0,0,0.1);
 
     /* Typography System */
     --font-serif: "Playfair Display", Georgia, serif;
     --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
     
     /* Fluid Type Scale */
-    --text-size-xl: clamp(1.75rem, 5vw, 3rem);  /* Main Quote */
-    --text-size-sm: clamp(0.875rem, 1.5vw, 1rem); /* Author/Meta */
+    --text-size-xl: clamp(1.5rem, 3vw, 2.2rem); 
+    --text-size-long: clamp(1.1rem, 2vw, 1.5rem); /* New variable for long quotes */
+    --text-size-sm: clamp(0.75rem, 1.5vw, 0.875rem); 
     
-    /* Layout Constraints */
-    --line-height-loose: 1.6;
-    --line-height-reset: 1.2;
-    --measure-optimal: 70ch;
+    --measure-optimal: 85ch; /* Increased width significantly */
 }
 
-/* ... Font Face Declarations omitted ... */
+@font-face {
+    font-family: 'Inter';
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: swap;
+    src: url('assets/fonts/inter-var.woff2') format('woff2');
+}
+
+@font-face {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 400 900;
+    font-display: swap;
+    src: url('assets/fonts/playfair-display.woff2') format('woff2');
+}
 
 * {
     margin: 0;
@@ -36,73 +51,141 @@ html, body {
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background-color: #000; /* Ensure base is black for smooth fade-in */
+    background-color: var(--bg-color-1); /* Fallback */
 }
 
 body {
     display: flex;
-    flex-direction: column; /* Stack clock and quote vertically */
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    
-    /* Multiverse Gradient */
-    background: linear-gradient(
-        135deg, 
-        var(--bg-start), 
-        var(--bg-mid), 
-        var(--bg-end),
-        var(--bg-start) /* Wrap around for smooth loop */
-    );
-    background-size: 400% 400%;
-    /* Fade in opacity first, then loop gradient */
-    opacity: 0;
-    animation: bodyFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards, gradientShift 45s ease infinite;
-    
     font-family: var(--font-sans);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: color 1s ease; /* Smooth text adaptation */
+    transition: color 1s ease;
 }
 
-/* 1. Refined Grain Texture Overlay (Less Blurry) */
+/* --- MESH GRADIENT BACKGROUND --- */
+.mesh-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    background: var(--bg-color-1); /* Base layer */
+    overflow: hidden;
+}
+
+.mesh-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px); /* The key to the mesh look */
+    opacity: 0.8;
+    animation: float var(--anim-speed) ease-in-out infinite;
+}
+
+.orb-1 {
+    width: 80vw;
+    height: 80vw;
+    top: -20%;
+    left: -20%;
+    background: var(--bg-color-2);
+    /* animation defined in JS or generic below, overridden by types */
+}
+
+.orb-2 {
+    width: 70vw;
+    height: 70vw;
+    bottom: -10%;
+    right: -10%;
+    background: var(--bg-color-3);
+}
+
+.orb-3 {
+    width: 50vw;
+    height: 50vw;
+    top: 30%;
+    left: 30%;
+    background: var(--bg-color-1); /* Mix baser color back in */
+    mix-blend-mode: overlay;
+}
+
+/* --- ORB ANIMATION TYPES --- */
+
+/* 1. SPHERE (Default Float) */
+.type-sphere .mesh-orb {
+    animation: floatSphere var(--anim-speed) ease-in-out infinite;
+}
+
+/* 2. PLANE (Slow, Linear Drift) */
+.type-plane .mesh-orb {
+    filter: blur(100px); /* Softer */
+    animation: driftPlane var(--anim-speed) linear infinite alternate;
+}
+
+/* 3. WATER (Wobbly, Fluid) */
+.type-water .mesh-orb {
+    filter: blur(80px); 
+    animation: wobbleWater calc(var(--anim-speed) * 0.6) ease-in-out infinite;
+    opacity: 0.8;
+     /* mix-blend-mode removed to fix color mismatch */
+}
+
+@keyframes floatSphere {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(15%, -15%) scale(1.1); }
+    66% { transform: translate(-10%, 10%) scale(0.95); }
+}
+
+@keyframes driftPlane {
+    0% { transform: translateX(-10%); }
+    100% { transform: translateX(10%); }
+}
+
+@keyframes wobbleWater {
+    0%, 100% { transform: scale(1) rotate(0deg); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; }
+    50% { transform: scale(1.1) rotate(5deg); border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%; }
+}
+
+/* --- NOISE GRAIN --- */
 #background-grain {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    /* Sharper noise using a simpler SVG pattern repeated */
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.5'/%3E%3C/svg%3E");
-    opacity: 0.04; 
     pointer-events: none;
-    z-index: 0;
-    mix-blend-mode: overlay; /* Better blending with colors */
+    z-index: 1; /* On top of mesh */
+    opacity: var(--noise-opacity);
+    /* SVG is now inline, so we don't need background-image */
 }
 
 /* 2. Main Layout */
 #app {
-    position: relative;
-    z-index: 1;
+    position: relative; /* Above background */
+    z-index: 2;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start; /* Start from top to accommodate clock */
     align-items: center;
     padding: 2rem;
-    overflow: hidden; /* Prevent scrolling entirely */
 }
 
 /* 3. Quote Container */
 #quote-container {
-    max-width: var(--measure-optimal); /* Constraint for readability */
-    width: 90%; /* Responsive fallback */
-    margin-top: 15vh; /* Push lower as requested */
+    max-width: var(--measure-optimal);
+    width: 90%;
     
+    /* Flex column to take remaining space but center content */
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
+    
     text-align: center;
     opacity: 0;
     transform: translateY(20px);
@@ -120,24 +203,29 @@ blockquote {
     font-family: var(--font-serif);
     font-size: var(--text-size-xl);
     line-height: var(--line-height-loose);
-    letter-spacing: -0.01em;
-    font-weight: 500;
+    letter-spacing: -0.02em; 
+    font-weight: 400; 
     margin-bottom: 2rem;
     text-shadow: var(--text-shadow);
-    transition: opacity 0.5s ease;
-    
-    /* Overflow Handling */
+    transition: opacity 0.5s ease, font-size 0.3s ease; /* Animate font size change */
     overflow-wrap: break-word;
     word-wrap: break-word;
     hyphens: auto;
     
-    /* Limit height/lines for extremely long quotes */
-    /* max-height: 60vh; */ /* Optional: truncate if preferred, but scrolling is better */
-    /* overflow-y: auto; */
+    /* Wider container */
+    max-width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Modifier class for long text */
+#quote-text.long-text {
+    font-size: var(--text-size-long);
+    line-height: 1.5;
 }
 
 #quote-source {
-    margin-top: 1.5rem;
+    margin-top: 2rem;
     display: flex;
     justify-content: center;
 }
@@ -146,59 +234,54 @@ blockquote {
     font-family: var(--font-sans);
     font-size: var(--text-size-sm);
     text-transform: uppercase;
-    letter-spacing: 0.15em;
+    letter-spacing: 0.2em; /* Very wide spacing for "BEN GOLDACRE" style */
     color: var(--text-secondary);
+    font-weight: 600;
     font-style: normal;
-    position: relative;
-    padding-top: 1rem;
+    opacity: 0.9;
 }
 
-#quote-author::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 40px;
-    height: 1px;
-    background: rgba(255,255,255,0.3);
-}
-
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-    #app { padding: 1rem; }
+/* 4. Clock */
+#clock {
+    position: relative; /* Changed from absolute to relative to prevent overlap */
+    margin-top: 4vh;
+    margin-bottom: 2vh;
+    flex-shrink: 0; /* Prevents clock from squashing */
     
-    :root {
-        /* Tighter constraints for mobile */
-        --line-height-loose: 1.4; 
-    }
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 5rem;
+    letter-spacing: -0.02em;
+    opacity: 0;
+    animation: fadeIn 2s ease forwards;
+    animation-delay: 0.5s;
+    color: var(--text-primary);
+    text-shadow: 0 4px 12px rgba(0,0,0,0.2);
     
-    #quote-text {
-        margin-bottom: 1.5rem;
-    }
-    
-    #settings-frame {
-        width: 100%; /* Full width settings on mobile */
-        max-width: 100%;
-    }
+    /* Layout for multi-line clock */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
 }
 
-@media (max-height: 600px) {
-    /* Landcape mobile or short screens */
-    #quote-container { margin-top: 0; }
-    #quote-text { font-size: clamp(1.2rem, 3vw, 1.8rem); margin-bottom: 1rem; }
+#clock .seconds {
+    font-size: 0.5em;
+    font-weight: 400;
+    opacity: 0.7;
 }
 
-/* Accessibility: Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-    body { animation: none; }
-    #quote-container { animation: none; opacity: 1; transform: none; }
-    #quote-text, .icon-btn { transition: none; }
-    #settings-frame { transition: none; }
+#clock .date-sub {
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    opacity: 0.8;
+    margin-top: 8px;
+    font-size: clamp(0.9rem, 1.5vw, 1.1rem);
+    text-transform: none;
 }
 
-/* 4. Controls / Icons */
+/* 5. Controls */
 #controls {
     position: absolute;
     bottom: 2rem;
@@ -209,100 +292,71 @@ blockquote {
 .icon-btn {
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 10px;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.icon-btn:hover {
     color: var(--text-primary);
-    background: rgba(255,255,255,0.05);
-    transform: rotate(90deg);
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    padding: 10px;
 }
 
-.icon-btn:focus-visible {
-    outline: 2px solid var(--text-primary);
-    outline-offset: 4px;
+/* 7. Context Indicator */
+#context-indicator {
+    position: absolute;
+    bottom: 2rem;
+    left: 2rem;
+    z-index: 5;
+    
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    
+    opacity: 0; /* JS controls visibility */
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
-
-/* Settings Iframe */
 #settings-frame {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 350px;
-    height: 100%;
+    position: absolute; /* Anchor inside parent context (body), but 'absolute' helps precise placement */
+    bottom: 5rem; /* Anchored to bottom */
+    right: 2rem;  /* Anchored to right, above button */
+    
+    transform: translateY(20px) scale(0.95);
+    transform-origin: bottom right; /* Animate from the button source */
+    
+    width: 320px; /* Bit narrower for elegance */
+    height: 480px;
     border: none;
-    background: #111; /* Fallback */
+    border-radius: 16px; 
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4); 
+    
     z-index: 100;
-    transform: translateX(100%);
-    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-    box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: 
+        opacity 0.25s cubic-bezier(0.2, 0.8, 0.2, 1),
+        transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+        
+    /* Glassmorphism for panel background (if allowed by iframe policy, else fallback in settings.css) */
+    background: transparent;
 }
 
 #settings-frame.visible {
-    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0) scale(1);
 }
 
-/* Animations */
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-@keyframes bodyFadeIn {
-    from { opacity: 0; }
+@keyframes fadeIn {
     to { opacity: 1; }
 }
-
 @keyframes fadeUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Clock Styling */
-#clock {
-    position: absolute;
-    top: 12vh; /* Middle Top position */
-    width: 100%;
-    text-align: center;
-    
-    font-family: var(--font-sans);
-    font-size: clamp(3rem, 4vw, 5rem);
-    font-weight: 200;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-    text-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    
-    opacity: 0;
-    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    animation-delay: 0.1s;
-}
-
-
-/* Context/Theme Indicator */
-#context-indicator {
-    position: fixed;
-    bottom: 2rem;
-    left: 2rem;
-    font-family: var(--font-sans);
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    opacity: 0.6;
-    letter-spacing: 0.05em;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
+.fade-in {
+    animation: fadeIn 1s ease forwards;
 }
 

@@ -6,14 +6,29 @@ const CONFIG = {
     minDisplayTime: 4000
 };
 
+// SETTINGS DEFAULTS
+const DEFAULTS = {
+    // Legacy
+    fontFamily: 'serif',
+    contextAware: true,
+    fontSize: 'l',
+    showSeconds: false,
+    showDate: false,
+    
+    // New Background Settings
+    bgType: 'plane',
+    noiseStrength: 40,
+    noiseDensity: 13,
+    color1: '#ff5005',
+    color2: '#dbba95',
+    color3: '#d0bce1',
+    speed: 40
+};
+
 // STATE
 let quotesData = [];
 let currentCategory = 'general';
-let userPreferences = {
-    fontFamily: 'serif',
-    fontSize: 'l',
-    contextAware: true
-};
+let userPreferences = { ...DEFAULTS };
 
 // DOM ELEMENTS
 const quoteTextEl = document.getElementById('quote-text');
@@ -40,7 +55,6 @@ async function init() {
             if (area === 'sync') {
                 loadSettings().then(() => {
                     applyAppearance();
-                     // Refresh if context mode changed
                      if (changes.contextAware) displayQuote(); 
                 });
             }
@@ -56,12 +70,8 @@ async function init() {
  */
 function loadSettings() {
     return new Promise((resolve) => {
-        chrome.storage.sync.get(['fontFamily', 'fontSize', 'contextAware'], (items) => {
-            userPreferences = {
-                fontFamily: items.fontFamily || 'serif',
-                fontSize: items.fontSize || 'l',
-                contextAware: items.contextAware !== false // Default true
-            };
+        chrome.storage.sync.get(DEFAULTS, (items) => {
+            userPreferences = items;
             resolve();
         });
     });
@@ -69,65 +79,97 @@ function loadSettings() {
 
 function applyAppearance() {
     const root = document.documentElement;
-    
-    // Font Family
+    const prefs = userPreferences;
+
+    // 1. Font Family
     const fonts = {
         'serif': '"Playfair Display", Georgia, serif',
         'sans': '"Inter", "Segoe UI", sans-serif',
-        'mono': '"Fira Code", monospace',
-        'helvetica': '"Helvetica Neue", Helvetica, Arial, sans-serif',
-        'garamond': '"Apple Garamond", "Garamond", "Baskerville", "Times New Roman", serif',
-        'cormorant': '"Cormorant Garamond", "Garamond", serif'
+        'mono': '"Space Mono", "Fira Code", monospace',
+        'cormorant': '"Cormorant Garamond", "Garamond", serif',
+        'lora': '"Lora", serif',
+        'montserrat': '"Montserrat", sans-serif',
+        'satisfy': '"Satisfy", cursive'
     };
-    root.style.setProperty('--font-serif', fonts[userPreferences.fontFamily] || fonts['serif']);
+    root.style.setProperty('--font-serif', fonts[prefs.fontFamily] || fonts['serif']);
 
-    // Font Size Scaling
-    const sizes = {
-        'm': { xl: 'clamp(1.25rem, 3vw, 2rem)', sm: '0.8rem' },
-        'l': { xl: 'clamp(1.75rem, 5vw, 3rem)', sm: '1rem' },
-        'xl': { xl: 'clamp(2.5rem, 7vw, 4.5rem)', sm: '1.2rem' }
-    };
-    const size = sizes[userPreferences.fontSize] || sizes['l'];
+    // 2. Background Colors
+    root.style.setProperty('--bg-color-1', prefs.color1);
+    root.style.setProperty('--bg-color-2', prefs.color2);
+    root.style.setProperty('--bg-color-3', prefs.color3);
+
+    // Save for anti-flash
+    localStorage.setItem('qq_bg_color_1', prefs.color1);
+
+    // 3. Shape / Type
+    const meshContainer = document.getElementById('mesh-container');
+    if (meshContainer) {
+        meshContainer.className = 'mesh-background'; // Reset
+        meshContainer.classList.add(`type-${prefs.bgType}`); // type-plane, type-water, type-sphere
+    }
+
+    // 4. Randomize Orb Positions (Non-deterministic)
+    randomizeOrbs();
+
+    // 5. Texture Noise
+    root.style.setProperty('--noise-opacity', prefs.noiseStrength / 100);
     
-    root.style.setProperty('--text-size-xl', size.xl);
-    root.style.setProperty('--text-size-sm', size.sm);
+    // Update SVG primitive directly for density
+    const turbulence = document.querySelector('feTurbulence');
+    if (turbulence) {
+        // Map 0-50 slider to 0.5-2.5 frequency
+        const freq = 0.5 + (prefs.noiseDensity / 50) * 2.0;
+        turbulence.setAttribute('baseFrequency', freq.toFixed(3));
+    }
 
-    // Dynamic Theme (Random or Context-based)
-    applyRandomTheme(root);
-}
+    // 4. Motion Speed
+    // Map 0-100 to 60s-5s (inverse)
+    const duration = 60 - (prefs.speed / 100 * 55);
+    const speedVal = `${Math.max(5, duration)}s`; // Increased min speed so it doesn't fly too fast
+    root.style.setProperty('--anim-speed', speedVal);
 
-function applyRandomTheme(root) {
-    // Curated high-quality gradients
-    const themes = [
-        { name: 'Deep Space', start: '#0f172a', mid: '#312e81', end: '#020617', text: 'light' },
-        { name: 'Aurora', start: '#134e4a', mid: '#115e59', end: '#042f2e', text: 'light' },
-        { name: 'Sunset', start: '#9f1239', mid: '#881337', end: '#4c0519', text: 'light' },
-        { name: 'Dusk', start: '#4a044e', mid: '#701a75', end: '#2e1065', text: 'light' },
-        { name: 'Ocean', start: '#1e3a8a', mid: '#1d4ed8', end: '#172554', text: 'light' },
-        { name: 'Forest', start: '#14532d', mid: '#166534', end: '#052e16', text: 'light' },
-        { name: 'Slate', start: '#334155', mid: '#475569', end: '#1e293b', text: 'light' },
-        // Lighter themes for contrast check
-        { name: 'Morning', start: '#f0f9ff', mid: '#e0f2fe', end: '#bae6fd', text: 'dark' },
-        { name: 'Peach', start: '#fff1f2', mid: '#ffe4e6', end: '#fecdd3', text: 'dark' }
-    ];
-
-    const theme = themes[Math.floor(Math.random() * themes.length)];
-    
-    root.style.setProperty('--bg-start', theme.start);
-    root.style.setProperty('--bg-mid', theme.mid);
-    root.style.setProperty('--bg-end', theme.end);
-
-    if (theme.text === 'dark') {
+    // 5. Text Contrast (Auto)
+    const lum = getLuminance(prefs.color1); 
+    // We base contrast mainly on Color 1 as it is the base color
+    if (lum > 0.5) {
+        // Light bg -> Dark text
         root.style.setProperty('--text-primary', 'rgba(17, 24, 39, 0.95)');
         root.style.setProperty('--text-secondary', 'rgba(55, 65, 81, 0.8)');
         root.style.setProperty('--text-shadow', 'none');
     } else {
+        // Dark bg -> Light text
         root.style.setProperty('--text-primary', 'rgba(255, 255, 255, 0.95)');
         root.style.setProperty('--text-secondary', 'rgba(255, 255, 255, 0.7)');
         root.style.setProperty('--text-shadow', '0 4px 12px rgba(0,0,0,0.3)');
     }
+}
+
+function randomizeOrbs() {
+    const orbs = document.querySelectorAll('.mesh-orb');
+    orbs.forEach(orb => {
+        // Random starting position offset
+        const randomX = Math.random() * 20 - 10; // -10% to 10%
+        const randomY = Math.random() * 20 - 10;
+        
+        // Random duration modifier
+        const randomDur = 0.8 + Math.random() * 0.4; // 0.8x to 1.2x speed
+        
+        orb.style.transform = `translate(${randomX}%, ${randomY}%)`;
+        orb.style.animationDuration = `calc(var(--anim-speed) * ${randomDur})`;
+        orb.style.animationDelay = `${Math.random() * -20}s`; // Random start point in cycle
+    });
+}
+
+// Helper: Calculate relative luminance
+function getLuminance(hex) {
+    if (!hex) return 0;
+    hex = hex.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
     
-    // console.log(`[Quiet Quotes] Applied theme: ${theme.name}`);
+    const a = [r, g, b].map(v => v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+    return a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722;
 }
 
 /**
@@ -159,7 +201,6 @@ function getContext() {
 
         chrome.storage.local.get(['current_context_category'], (result) => {
             currentCategory = result.current_context_category || 'general';
-            // console.log(`[Quiet Quotes] Mode: ${currentCategory}`);
             resolve(currentCategory);
         });
     });
@@ -171,61 +212,38 @@ function getContext() {
 function selectQuote() {
     let relevantQuotes = quotesData;
     
-    // 1. Definition of Category Mappings
-    // Maps scraper categories (keys) to JSON tags/categories (values)
-    const categoryMap = {
-        'coding': ['technology', 'science', 'work', 'success', 'intelligence', 'programming', 'computers', 'logic'],
-        'productivity': ['work', 'success', 'time', 'action', 'motivation', 'business', 'leadership'],
-        'creative': ['art', 'beauty', 'poetry', 'imagination', 'writing', 'create', 'music'],
-        'learning': ['education', 'knowledge', 'wisdom', 'history', 'science', 'philosophy', 'books'],
-        'wellbeing': ['life', 'happiness', 'peace', 'faith', 'health', 'mindfulness', 'calm', 'nature', 'hope']
+    // Simple category mapping (could be expanded)
+    const categoryKeywords = {
+        'coding': ['technology', 'programming', 'logic', 'science'],
+        'productivity': ['work', 'success', 'time', 'action'],
+        'creative': ['art', 'imagination', 'create', 'beauty'],
+        'wellbeing': ['peace', 'happiness', 'mind', 'health']
     };
 
     if (currentCategory !== 'general') {
-        const targetKeywords = categoryMap[currentCategory] || [currentCategory];
-        
-        const filtered = quotesData.filter(q => {
-           // Helper to safely check inclusion
-           const hasText = (txt) => {
-               if (!txt) return false;
-               const lower = txt.toLowerCase();
-               // EXACT MATCH check first for category (e.g. "science" === "science")
-               // or substring match for tags
-               return targetKeywords.some(keyword => lower === keyword || lower.includes(keyword));
-           };
-           
-           const catMatch = hasText(q.Category);
-           const tagMatch = q.Tags && Array.isArray(q.Tags) && q.Tags.some(t => hasText(t));
-           
-           return catMatch || tagMatch;
-       });
-       
-       if (filtered.length > 0) {
-           relevantQuotes = filtered;
-       } else {
-           console.warn(`[Quiet Quotes] No quotes found for context: ${currentCategory} using keywords: ${targetKeywords.join(', ')}`);
-       }
+        const keywords = categoryKeywords[currentCategory] || [currentCategory];
+        relevantQuotes = quotesData.filter(q => {
+            const txt = (q.Category || '') + ' ' + (q.Tags || []).join(' ');
+            return keywords.some(k => txt.toLowerCase().includes(k));
+        });
     }
 
-    // Filter out long quotes to ensure they fit properly on screen without scrolling
-    // (Approx 200 chars is roughly 3-4 lines on desktop)
-    relevantQuotes = relevantQuotes.filter(q => q.Quote.length < 220);
-    
-    // If we filtered everything out, revert to original list (safety net)
-    if (relevantQuotes.length === 0) relevantQuotes = quotesData;
-
-    if (relevantQuotes.length === 0) return quotesData[0]; // Safe fallback
+    if (!relevantQuotes || relevantQuotes.length === 0) relevantQuotes = quotesData;
+    if (relevantQuotes.length === 0) return quotesData[0];
 
     const randomIndex = Math.floor(Math.random() * relevantQuotes.length);
     const selected = relevantQuotes[randomIndex];
-    
+
     // Context Indicator
     const contextEl = document.getElementById('context-indicator');
-    if (contextEl && currentCategory !== 'general') {
-        const formattedCategory = currentCategory.charAt(0).toUpperCase() + currentCategory.slice(1);
-        contextEl.textContent = `Inspired by your interest in ${formattedCategory}`;
-    } else if (contextEl) {
-        contextEl.textContent = ''; // Clean look for general/default
+    if (contextEl && userPreferences.contextAware) {
+        if (currentCategory && currentCategory !== 'general') {
+             contextEl.textContent = `Inspired by ${currentCategory}`;
+             contextEl.style.opacity = 0.6;
+        } else {
+            contextEl.textContent = '';
+            contextEl.style.opacity = 0;
+        }
     }
     
     return selected;
@@ -233,25 +251,31 @@ function selectQuote() {
 
 function displayQuote() {
     if (!quotesData || quotesData.length === 0) return;
-
     const quote = selectQuote();
-    
-    // Reset opacity to trigger fade
+
+    // Pre-calculate sizing class BEFORE showing
+    // Remove both opacity and size transition to prevent "morphing" visual
+    quoteTextEl.style.transition = 'none'; 
     quoteTextEl.style.opacity = 0;
     
-    setTimeout(() => {
-        quoteTextEl.textContent = `“${quote.Quote}”`;
-        quoteAuthorEl.textContent = quote.Author;
-        
-        // Fade in
-        quoteTextEl.style.opacity = 1;
+    // Set content and class immediately while hidden
+    quoteTextEl.textContent = `“${quote.Quote}”`;
+    quoteAuthorEl.textContent = quote.Author;
+    
+    if (quote.Quote.length > 150) {
+        quoteTextEl.classList.add('long-text');
+    } else {
+        quoteTextEl.classList.remove('long-text');
+    }
 
-        // Save history
-        chrome.storage.local.set({ 
-            last_view_time: Date.now(),
-            last_quote: quote.Quote 
-        });
-    }, 200);
+    // Force reflow to ensure the new class is applied before we fade in
+    void quoteTextEl.offsetWidth; 
+
+    // Restore transition and fade in
+    setTimeout(() => {
+        quoteTextEl.style.transition = 'opacity 0.8s ease';
+        quoteTextEl.style.opacity = 1;
+    }, 50);
 }
 
 /**
@@ -259,38 +283,54 @@ function displayQuote() {
  */
 function startClock() {
     updateTime();
-    // Sync seconds to update precisely on the minute change if desired, 
-    // but 1s interval is simple and sufficient for HH:MM
     setInterval(updateTime, 1000);
 }
 
 function updateTime() {
     if (!clockEl) return;
-    
     const now = new Date();
+    
+    // 1. Time
     let hours = now.getHours();
     const minutes = now.getMinutes();
+    const seconds = now.getSeconds();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     
     hours = hours % 12;
-    hours = hours ? hours : 12; // the hour '0' should be '12'
+    hours = hours ? hours : 12; 
     
     const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+    const secondsStr = seconds < 10 ? '0' + seconds : seconds;
     
-    clockEl.textContent = `${hours}:${minutesStr} ${ampm}`;
+    let timeHtml = `${hours}:${minutesStr}`;
+    if (userPreferences.showSeconds) {
+        timeHtml += `<span class="seconds">:${secondsStr}</span>`;
+    }
+    timeHtml += ` ${ampm}`;
+
+    // 2. Date
+    if (userPreferences.showDate) {
+        const dateOptions = { weekday: 'long', month: 'long', day: 'numeric' };
+        const dateStr = now.toLocaleDateString('en-US', dateOptions);
+        clockEl.innerHTML = `
+            <div class="time-main">${timeHtml}</div>
+            <div class="date-sub">${dateStr}</div>
+        `;
+        clockEl.classList.add('has-date');
+    } else {
+        clockEl.innerHTML = timeHtml;
+        clockEl.classList.remove('has-date');
+    }
 }
 
 /**
  * 6. Event Listeners
  */
 function setupEventListeners() {
-    if (!settingsBtn || !settingsFrame) {
-        console.error("Settings elements missing!");
-        return;
-    }
+    if (!settingsBtn || !settingsFrame) return;
 
     settingsBtn.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevent immediate closing
+        e.stopPropagation();
         const isVisible = settingsFrame.classList.contains('visible');
         if (isVisible) {
             settingsFrame.classList.remove('visible');
@@ -298,18 +338,18 @@ function setupEventListeners() {
         } else {
             settingsFrame.classList.add('visible');
             settingsFrame.setAttribute('aria-hidden', 'false');
-            // settingsFrame.focus(); // Focus iframe if needed
         }
     });
 
-    // Close settings when clicking outside
+    // Close on click outside
     document.addEventListener('click', (e) => {
-        if (settingsFrame.classList.contains('visible') && !settingsFrame.contains(e.target) && e.target !== settingsBtn) {
-             settingsFrame.classList.remove('visible');
-             settingsFrame.setAttribute('aria-hidden', 'true');
+        if (settingsFrame.classList.contains('visible') && 
+            !settingsFrame.contains(e.target) && 
+            !settingsBtn.contains(e.target)) {
+            settingsFrame.classList.remove('visible');
+            settingsFrame.setAttribute('aria-hidden', 'true');
         }
     });
 }
 
-// Start
-document.addEventListener('DOMContentLoaded', init);
+init();
