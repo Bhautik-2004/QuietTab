@@ -1,9 +1,8 @@
 /* Reset & Base */
 :root {
     /* Dynamic Theme Variables - Controlled by JS */
-    --bg-color-1: #ff5005;
-    --bg-color-2: #dbba95;
-    --bg-color-3: #d0bce1;
+    /* Colors are now set via inline JS to prevent FOUC */
+    --bg-color-1: #000000; /* Default to black to prevent white flash */
     
     --noise-opacity: 0.15; /* Increased visibility */
     --anim-speed: 20s;

@@ -159,6 +159,11 @@ function saveSettings() {
             showDate: inputs.showDate.checked
         };
 
+        // Cache colors to localStorage for immediate availability in new tab
+        localStorage.setItem('qq_bg_color_1', settings.color1);
+        localStorage.setItem('qq_bg_color_2', settings.color2);
+        localStorage.setItem('qq_bg_color_3', settings.color3);
+
         chrome.storage.sync.set(settings, () => {
             showStatus('Saved');
         });

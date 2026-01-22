@@ -72,6 +72,12 @@ function loadSettings() {
     return new Promise((resolve) => {
         chrome.storage.sync.get(DEFAULTS, (items) => {
             userPreferences = items;
+
+            // Cache colors to localStorage for instant load in newtab.html
+            localStorage.setItem('qq_bg_color_1', items.color1);
+            localStorage.setItem('qq_bg_color_2', items.color2);
+            localStorage.setItem('qq_bg_color_3', items.color3);
+
             resolve();
         });
     });

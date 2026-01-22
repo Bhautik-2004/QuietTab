@@ -1,10 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="background-color: #000000;">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>New Tab | Quiet Quotes</title>
     
+    <script>
+        // CRITICAL: Prevent white flash by applying last known color immediately
+        // This must run BEFORE any CSS is loaded to prevent FOUC
+        (function() {
+            try {
+                const c1 = localStorage.getItem('qq_bg_color_1') || '#ff5005';
+                const c2 = localStorage.getItem('qq_bg_color_2') || '#dbba95';
+                const c3 = localStorage.getItem('qq_bg_color_3') || '#d0bce1';
+                
+                const root = document.documentElement;
+                
+                root.style.setProperty('--bg-color-1', c1);
+                root.style.setProperty('--bg-color-2', c2);
+                root.style.setProperty('--bg-color-3', c3);
+                root.style.background = c1;
+            } catch(e) {
+                // Absolute fallback
+                document.documentElement.style.background = '#ff5005';
+            }
+        })();
+    </script>
+
     <!-- PCB: Preload fonts for instant rendering (placeholders) -->
     <!-- <link rel="preload" href="assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin> -->
     <!-- <link rel="preload" href="assets/fonts/playfair-display.woff2" as="font" type="font/woff2" crossorigin> -->
@@ -15,19 +37,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;600&family=Satisfy&family=Space+Mono:wght@400&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="newtab.css">
-    <script>
-        // CRITICAL: Prevent white flash by applying last known color immediately
-        try {
-            const savedColor = localStorage.getItem('qq_bg_color_1');
-            if (savedColor) {
-                document.documentElement.style.setProperty('--bg-color-1', savedColor);
-                document.documentElement.style.background = savedColor;
-            } else {
-                // Default fallback if no storage
-                document.documentElement.style.background = '#ff5005';
-            }
-        } catch(e) {}
-    </script>
 </head>
 <body>
     <div id="mesh-container" class="mesh-background">
