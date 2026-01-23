@@ -12,6 +12,10 @@
     --text-secondary: rgba(255, 255, 255, 0.7);
     --text-shadow: 0 4px 12px rgba(0,0,0,0.1);
 
+    --tile-bg: rgba(255, 255, 255, 0.08);
+    --tile-border: rgba(255, 255, 255, 0.12);
+    --tile-hover: rgba(255, 255, 255, 0.18);
+
     /* Typography System */
     --font-serif: "Playfair Display", Georgia, serif;
     --font-sans: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -156,15 +160,14 @@ body {
     width: 100%;
     height: 100%;
     pointer-events: none;
-    z-index: 1; /* On top of mesh */
+    z-index: 1; /* On top of mesh (0), below app (2) */
     opacity: var(--noise-opacity);
-    /* SVG is now inline, so we don't need background-image */
 }
 
 /* 2. Main Layout */
 #app {
-    position: relative; /* Above background */
-    z-index: 2;
+    position: relative; 
+    z-index: 2; /* Explicitly above grain */
     width: 100%;
     height: 100%;
     display: flex;
@@ -278,6 +281,350 @@ blockquote {
     margin-top: 8px;
     font-size: clamp(0.9rem, 1.5vw, 1.1rem);
     text-transform: none;
+}
+
+/* 4.5 Pinned Sites */
+#pinned-section {
+    width: min(800px, 92%);
+    margin: 1.5rem auto 0.5rem; /* Reduced bottom margin */
+    padding: 0;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeUp 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: 0.8s;
+}
+
+.pinned-grid {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+
+.pin-card {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    border-radius: 16px;
+    background: var(--tile-bg);
+    border: 1px solid var(--tile-border);
+    color: var(--text-primary);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    gap: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(8px);
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    /* overflow: hidden; Removed to allow menu overflow */
+    flex-shrink: 0;
+    z-index: 1; /* Base z-index */
+}
+
+/* Elevate card when menu is open so it overlaps neighbors */
+.pin-card.menu-open {
+    z-index: 100;
+}
+
+.pin-card:hover {
+    transform: translateY(-2px);
+    background: var(--tile-hover);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.pin-card:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 3px;
+}
+
+.pin-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    overflow: hidden;
+    position: relative;
+    /* PADDING REMOVED from parent to avoid flex layout interfering with img */
+    padding: 0; 
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* Hide initials when image is present */
+.pin-icon.has-img {
+    color: transparent; 
+    background: rgba(255, 255, 255, 0.05); 
+}
+
+.pin-icon img {
+    /* Absolute positioning ignores the text-node sibling */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    
+    /* Apply safe zone padding directly to image box */
+    padding: 8px;
+    box-sizing: border-box;
+    
+    object-fit: contain; 
+    display: none;
+    border-radius: 0; 
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.pin-icon.has-img img {
+    display: block;
+}
+
+.pin-title {
+    text-align: center;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    font-size: 0.75rem;
+    letter-spacing: 0.01em;
+    color: var(--text-primary);
+    text-shadow: var(--text-shadow);
+    line-height: 1.3;
+    
+    /* Truncate nicely */
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+    white-space: nowrap;
+}
+
+.pin-menu-trigger {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.2s;
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.pin-card:hover .pin-menu-trigger,
+.pin-menu-trigger:focus-visible,
+.pin-menu-trigger[aria-expanded="true"] {
+    opacity: 1;
+}
+
+.pin-menu-trigger:hover,
+.pin-menu-trigger[aria-expanded="true"] {
+    background: rgba(255,255,255,0.15);
+    color: var(--text-primary);
+}
+
+.pin-menu {
+    position: absolute;
+    top: 36px;
+    right: 4px;
+    
+    /* Settings Theme Match */
+    background: #1a1a1a; /* Match settings header/darker tone */
+    border: 1px solid #333;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); /* Smoother shadow */
+    
+    border-radius: 8px; /* Match settings radius */
+    padding: 4px;
+    display: none;
+    flex-direction: column;
+    min-width: 120px;
+    z-index: 50;
+    transform-origin: top right;
+    animation: menuPop 0.15s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes menuPop {
+    from { opacity: 0; transform: scale(0.95) translateY(-5px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.pin-menu.visible {
+    display: flex;
+}
+
+.pin-menu-item {
+    background: transparent;
+    border: none;
+    color: #ccc; /* Softer text color */
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-radius: 4px;
+    font-family: var(--font-sans);
+    font-weight: 500;
+    transition: background 0.1s, color 0.1s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pin-menu-item:hover {
+    background: #2a2a2a;
+    color: #fff;
+}
+
+.pin-menu-item.danger {
+    color: #ff6b6b;
+    border-top: 1px solid #2a2a2a;
+    margin-top: 2px;
+    padding-top: 8px; /* Better spacing for separator */
+}
+
+.pin-menu-item.danger:hover {
+    background: #2a1515;
+    color: #ff4b4b;
+}
+
+.pin-menu-item.danger {
+    color: #ff6b6b;
+}
+
+.pin-menu-item.danger:hover {
+    background: rgba(255, 75, 75, 0.15);
+}
+
+.pin-add {
+    border: 1px dashed var(--tile-border);
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 1.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    gap: 4px;
+}
+
+.pin-add:hover {
+    border-color: var(--tile-hover);
+    background: var(--tile-hover);
+}
+
+.pin-add-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    opacity: 0.8;
+}
+
+/* Add Pin Dialog */
+#add-pin-dialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    width: 320px;
+    padding: 24px;
+    background: var(--bg-color-2); /* Fallback */
+    background: rgba(20, 20, 20, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+#add-pin-dialog.visible {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.dialog-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.dialog-input-group {
+    margin-bottom: 1.25rem;
+}
+
+.dialog-label {
+    display: block;
+    font-size: 0.8rem;
+    margin-bottom: 6px;
+    opacity: 0.8;
+    font-weight: 500;
+}
+
+.dialog-input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+}
+
+.dialog-input:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.5);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.dialog-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 2rem;
+}
+
+.dialog-btn {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.btn-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.btn-save {
+    background: #fff;
+    color: #000;
+}
+
+.dialog-btn:hover {
+    opacity: 0.9;
 }
 
 /* 5. Controls */

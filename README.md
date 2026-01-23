@@ -1,14 +1,38 @@
 # Quiet Quotes
 
-A minimalist, aesthetically pleasing Chrome New Tab extension that serves daily inspiration alongside a clean clock.
+A minimalist, aesthetically pleasing Chrome New Tab extension that serves daily inspiration alongside a clean clock and pinned shortcuts.
 
 ## Features
 
-- **Minimalist Design**: Clean typography, fluid layouts, and a soothing multiverse gradient background.
+- **Minimalist Design**: Clean typography, fluid layouts, and a soothing mesh gradient background.
 - **Dynamic Themes**: Backgrounds shift subtly; text adapts for readability.
+- **Pinned Sites**: Quick access to your favorite websites with custom shortcuts (up to 12 sites).
 - **Context Awareness**: (Optional) Smartly detects if you're browsing coding or creative sites to serve relevant quotes.
 - **Privacy Focused**: All preferences are stored locally or synced via your Chrome profile. No external tracking.
 - **Time Display**: Elegant 12-hour clock centered at the top.
+- **Customizable Background**: Choose from Plane, Sphere, or Water effects with adjustable noise texture and motion speed.
+
+## Recent Updates (January 23, 2026)
+
+### Pinned Sites Feature
+- **Add Shortcuts**: Click the "+" tile to add your favorite websites with custom names
+- **Edit & Remove**: 3-dot menu on each tile for quick editing or removal
+- **Favicon Support**: Automatic favicon loading with fallback to site initials
+- **Smart Grid**: Responsive layout that adapts to your collection (max 12 sites)
+- **Persistent Storage**: Sites sync across devices via Chrome sync
+
+### UI/UX Improvements
+- **Modern Dialog**: Custom modal for adding/editing sites (replaces browser prompts)
+- **Glassmorphism Menus**: Consistent styling across settings and context menus
+- **Smooth Animations**: Fade-in effects for tiles, menus, and dialogs
+- **Click-Outside-to-Close**: Intuitive dismissal for dialogs and menus
+- **Z-Index Management**: Fixed menu overlay issues for proper stacking
+
+### Technical Enhancements
+- Moved grain texture outside app container to prevent UI interference
+- Improved favicon rendering with proper padding and containment
+- Fixed event listener cleanup to prevent dialog reopening issues
+- Enhanced color contrast system for tile backgrounds based on theme luminance
 
 ## Installation
 

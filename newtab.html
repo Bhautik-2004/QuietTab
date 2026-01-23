@@ -45,21 +45,27 @@
         <div class="mesh-orb orb-3"></div>
     </div>
 
+    <!-- Interactive background layer -->
+    <svg id="background-grain" aria-hidden="true">
+        <filter id="noiseFilter">
+            <feTurbulence 
+                type="fractalNoise" 
+                baseFrequency="0.65" 
+                numOctaves="3" 
+                stitchTiles="stitch" />
+        </filter>
+        <rect width="100%" height="100%" filter="url(#noiseFilter)" opacity="1" />
+    </svg>
+
     <main id="app" role="main">
-        <!-- Interactive background layer -->
-        <svg id="background-grain" aria-hidden="true">
-            <filter id="noiseFilter">
-                <feTurbulence 
-                    type="fractalNoise" 
-                    baseFrequency="0.65" 
-                    numOctaves="3" 
-                    stitchTiles="stitch" />
-            </filter>
-            <rect width="100%" height="100%" filter="url(#noiseFilter)" opacity="1" />
-        </svg>
 
         <!-- Clock -->
         <time id="clock" aria-label="Current time"></time>
+
+        <!-- Pinned Sites -->
+        <section id="pinned-section" aria-label="Pinned sites">
+            <div id="pinned-grid" class="pinned-grid" role="list"></div>
+        </section>
 
         <section id="quote-container" aria-live="polite" aria-label="Daily Quote">
             <blockquote id="quote-block">
@@ -82,6 +88,25 @@
 
     <!-- Settings Panel (Hidden by default) -->
     <iframe id="settings-frame" src="settings.html" aria-hidden="true" tabindex="-1"></iframe>
+
+    <!-- Add Pin Dialog -->
+    <div id="add-pin-dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+        <h2 id="dialog-title" class="dialog-title">Add Shortcut</h2>
+        <form id="add-pin-form">
+            <div class="dialog-input-group">
+                <label for="pin-url" class="dialog-label">Website URL</label>
+                <input type="text" id="pin-url" class="dialog-input" placeholder="https://example.com" required>
+            </div>
+            <div class="dialog-input-group">
+                <label for="pin-name" class="dialog-label">Name</label>
+                <input type="text" id="pin-name" class="dialog-input" placeholder="Example Site">
+            </div>
+            <div class="dialog-actions">
+                <button type="button" class="dialog-btn btn-cancel" id="btn-cancel-pin">Cancel</button>
+                <button type="submit" class="dialog-btn btn-save">Save</button>
+            </div>
+        </form>
+    </div>
 
     <!-- Context Indicator -->
     <div id="context-indicator"></div>

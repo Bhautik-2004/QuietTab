@@ -6,6 +6,8 @@ const CONFIG = {
     minDisplayTime: 4000
 };
 
+const PIN_LIMIT = 12;
+
 // SETTINGS DEFAULTS
 const DEFAULTS = {
     // Legacy
@@ -29,6 +31,7 @@ const DEFAULTS = {
 let quotesData = [];
 let currentCategory = 'general';
 let userPreferences = { ...DEFAULTS };
+let pinnedSites = [];
 
 // DOM ELEMENTS
 const quoteTextEl = document.getElementById('quote-text');
@@ -36,6 +39,7 @@ const quoteAuthorEl = document.getElementById('quote-author');
 const clockEl = document.getElementById('clock');
 const settingsBtn = document.getElementById('settings-trigger');
 const settingsFrame = document.getElementById('settings-frame');
+const pinnedGrid = document.getElementById('pinned-grid');
 
 /**
  * 1. Initialize Extension
@@ -44,6 +48,7 @@ async function init() {
     try {
         await loadSettings();
         applyAppearance();
+        await loadPinnedSites();
         startClock();
         await loadQuotes();
         await getContext();
@@ -55,8 +60,13 @@ async function init() {
             if (area === 'sync') {
                 loadSettings().then(() => {
                     applyAppearance();
-                     if (changes.contextAware) displayQuote(); 
+                    if (changes.contextAware) displayQuote(); 
                 });
+
+                if (changes.pinnedSites && pinnedGrid) {
+                    pinnedSites = Array.isArray(changes.pinnedSites.newValue) ? changes.pinnedSites.newValue : [];
+                    renderPinnedSites();
+                }
             }
         });
     } catch (error) {
@@ -81,6 +91,301 @@ function loadSettings() {
             resolve();
         });
     });
+}
+
+function loadPinnedSites() {
+    return new Promise((resolve) => {
+        if (!pinnedGrid) {
+            resolve();
+            return;
+        }
+
+        chrome.storage.sync.get({ pinnedSites: [] }, (items) => {
+            pinnedSites = Array.isArray(items.pinnedSites) ? items.pinnedSites : [];
+            renderPinnedSites();
+            resolve();
+        });
+    });
+}
+
+function savePinnedSites() {
+    chrome.storage.sync.set({ pinnedSites });
+}
+
+function renderPinnedSites() {
+    if (!pinnedGrid) return;
+
+    pinnedGrid.innerHTML = '';
+
+    pinnedSites.slice(0, PIN_LIMIT).forEach((site, index) => {
+        const card = createPinCard(site, index);
+        pinnedGrid.appendChild(card);
+    });
+
+    const addCard = document.createElement('button');
+    addCard.type = 'button';
+    addCard.id = 'add-pin';
+    addCard.className = 'pin-card pin-add';
+    addCard.setAttribute('aria-label', 'Add pinned site');
+    addCard.innerHTML = '<span aria-hidden="true">+</span><span class="pin-add-label">Add site</span>';
+    addCard.addEventListener('click', handleAddPin);
+    pinnedGrid.appendChild(addCard);
+}
+
+function createPinCard(site, index) {
+    const card = document.createElement('div');
+    card.className = 'pin-card';
+    card.setAttribute('role', 'listitem');
+    const titleText = site.title || getHostname(site.url);
+
+    // Link Wrapper (so clicking the card goes to site)
+    const link = document.createElement('a');
+    link.href = site.url;
+    link.className = 'pin-link';
+    link.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;';
+    link.setAttribute('aria-label', `Open ${titleText}`);
+    
+    // Icon
+    const iconWrap = document.createElement('div');
+    iconWrap.className = 'pin-icon';
+    iconWrap.textContent = getSiteInitials(titleText);
+
+    const iconImg = document.createElement('img');
+    iconImg.src = getFaviconUrl(site.url);
+    iconImg.alt = '';
+    iconImg.loading = 'lazy';
+    iconImg.decoding = 'async';
+    iconImg.addEventListener('load', () => {
+        if (iconImg.naturalWidth > 1) {
+             iconWrap.classList.add('has-img');
+        }
+    });
+    iconImg.addEventListener('error', () => iconWrap.classList.remove('has-img'));
+    iconWrap.appendChild(iconImg);
+
+    // Title
+    const title = document.createElement('span');
+    title.className = 'pin-title';
+    title.textContent = titleText;
+    title.title = titleText;
+
+    // Menu Trigger (3 dots)
+    const menuBtn = document.createElement('button');
+    menuBtn.className = 'pin-menu-trigger';
+    menuBtn.innerHTML = '⋮'; // entity
+    menuBtn.setAttribute('aria-label', 'Options');
+    menuBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.style.zIndex = '2'; // Above link
+
+    // Menu Dropdown
+    const menu = document.createElement('div');
+    menu.className = 'pin-menu';
+    menu.style.zIndex = '3';
+
+    const editBtn = document.createElement('button');
+    editBtn.className = 'pin-menu-item';
+    editBtn.textContent = 'Edit';
+    editBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        openEditDialog(index);
+        menu.classList.remove('visible');
+        card.classList.remove('menu-open');
+    };
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'pin-menu-item danger';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        pinnedSites.splice(index, 1);
+        savePinnedSites();
+        renderPinnedSites();
+        // card is removed, so no need to remove class
+    };
+
+    menu.appendChild(editBtn);
+    menu.appendChild(removeBtn);
+
+    // Toggle Menu
+    menuBtn.onclick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Close others
+        document.querySelectorAll('.pin-menu.visible').forEach(m => {
+            if (m !== menu) { 
+                m.classList.remove('visible');
+                const p = m.closest('.pin-card');
+                if (p) p.classList.remove('menu-open');
+            }
+        });
+        document.querySelectorAll('.pin-menu-trigger[aria-expanded="true"]').forEach(b => {
+             if (b !== menuBtn) b.setAttribute('aria-expanded', 'false');
+        });
+
+        const isVisible = menu.classList.contains('visible');
+        if (isVisible) {
+            menu.classList.remove('visible');
+            menuBtn.setAttribute('aria-expanded', 'false');
+            card.classList.remove('menu-open');
+        } else {
+            menu.classList.add('visible');
+            menuBtn.setAttribute('aria-expanded', 'true');
+            card.classList.add('menu-open');
+        }
+    };
+
+    card.appendChild(link);
+    card.appendChild(iconWrap);
+    card.appendChild(title);
+    card.appendChild(menuBtn);
+    card.appendChild(menu);
+
+    return card;
+}
+
+function handleAddPin() {
+    openEditDialog();
+}
+
+function openEditDialog(index = -1) {
+    const dialog = document.getElementById('add-pin-dialog');
+    const form = document.getElementById('add-pin-form');
+    const urlInput = document.getElementById('pin-url');
+    const nameInput = document.getElementById('pin-name');
+    const cancelBtn = document.getElementById('btn-cancel-pin');
+    const titleEl = document.getElementById('dialog-title');
+    
+    // Setup State
+    const isEdit = index >= 0;
+    titleEl.textContent = isEdit ? 'Edit Shortcut' : 'Add Shortcut';
+    
+    if (isEdit) {
+        urlInput.value = pinnedSites[index].url;
+        nameInput.value = pinnedSites[index].title;
+    } else {
+        urlInput.value = '';
+        nameInput.value = '';
+    }
+
+    const closeDialog = () => {
+        dialog.classList.remove('visible');
+        // Clean up listeners
+        if (window.dialogOutsideHandler) {
+            document.removeEventListener('click', window.dialogOutsideHandler);
+            window.dialogOutsideHandler = null;
+        }
+    };
+
+    // Remove old form submit handler
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+    
+    // Get fresh references
+    const freshForm = document.getElementById('add-pin-form');
+    const freshCancelBtn = document.getElementById('btn-cancel-pin');
+    const freshUrlInput = document.getElementById('pin-url');
+    const freshNameInput = document.getElementById('pin-name');
+    
+    // Restore values after cloning
+    freshUrlInput.value = urlInput.value;
+    freshNameInput.value = nameInput.value;
+    
+    // Attach cancel handler
+    freshCancelBtn.onclick = (e) => {
+        e.preventDefault();
+        closeDialog();
+    };
+
+    // Attach submit handler
+    freshForm.onsubmit = (e) => {
+        e.preventDefault();
+
+        const rawUrl = freshUrlInput.value.trim();
+        if (!rawUrl) return;
+
+        let normalized = rawUrl;
+        if (!/^https?:\/\//i.test(normalized)) {
+            normalized = `https://${normalized}`;
+        }
+
+        let parsed;
+        try {
+            parsed = new URL(normalized);
+        } catch (err) {
+            alert('Please enter a valid URL.');
+            return;
+        }
+
+        const suggestedName = getHostname(parsed.href);
+        const label = freshNameInput.value.trim() || suggestedName;
+        const siteData = { url: parsed.href, title: label.trim() };
+
+        if (isEdit) {
+            pinnedSites[index] = siteData;
+        } else {
+            pinnedSites = [siteData, ...pinnedSites.filter(site => site.url !== siteData.url)].slice(0, PIN_LIMIT);
+        }
+        
+        savePinnedSites();
+        renderPinnedSites();
+        closeDialog();
+    };
+    
+    // Show dialog
+    dialog.classList.add('visible');
+    
+    // Focus input with delay
+    setTimeout(() => freshUrlInput.focus(), 50);
+    
+    // Close on outside click (with cleanup)
+    setTimeout(() => {
+        if (window.dialogOutsideHandler) {
+            document.removeEventListener('click', window.dialogOutsideHandler);
+        }
+        
+        window.dialogOutsideHandler = (e) => {
+            if (!dialog.contains(e.target) && dialog.classList.contains('visible')) {
+                closeDialog();
+            }
+        };
+        document.addEventListener('click', window.dialogOutsideHandler);
+    }, 100);
+}
+
+// Global click to close menus
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.pin-menu-trigger') && !e.target.closest('.pin-menu')) {
+        document.querySelectorAll('.pin-menu.visible').forEach(m => {
+            m.classList.remove('visible');
+            const c = m.closest('.pin-card');
+            if (c) c.classList.remove('menu-open');
+        });
+        document.querySelectorAll('.pin-menu-trigger[aria-expanded="true"]').forEach(b => b.setAttribute('aria-expanded', 'false'));
+    }
+});
+
+function getFaviconUrl(url) {
+    return `https://www.google.com/s2/favicons?sz=128&domain_url=${encodeURIComponent(url)}`;
+}
+
+function getHostname(url) {
+    try {
+        return new URL(url).hostname.replace('www.', '');
+    } catch (err) {
+        return url;
+    }
+}
+
+function getSiteInitials(label = '') {
+    const clean = label.replace(/https?:\/\//i, '').replace('www.', '');
+    const parts = clean.split(/[\s.-]+/).filter(Boolean);
+    if (parts.length === 0) return '•';
+    const first = parts[0].charAt(0);
+    const second = parts.length > 1 ? parts[1].charAt(0) : (parts[0].charAt(1) || '');
+    return (first + second).toUpperCase();
 }
 
 function applyAppearance() {
@@ -142,11 +447,17 @@ function applyAppearance() {
         root.style.setProperty('--text-primary', 'rgba(17, 24, 39, 0.95)');
         root.style.setProperty('--text-secondary', 'rgba(55, 65, 81, 0.8)');
         root.style.setProperty('--text-shadow', 'none');
+        root.style.setProperty('--tile-bg', 'rgba(17, 24, 39, 0.04)');
+        root.style.setProperty('--tile-border', 'rgba(17, 24, 39, 0.06)');
+        root.style.setProperty('--tile-hover', 'rgba(17, 24, 39, 0.08)');
     } else {
         // Dark bg -> Light text
         root.style.setProperty('--text-primary', 'rgba(255, 255, 255, 0.95)');
         root.style.setProperty('--text-secondary', 'rgba(255, 255, 255, 0.7)');
         root.style.setProperty('--text-shadow', '0 4px 12px rgba(0,0,0,0.3)');
+        root.style.setProperty('--tile-bg', 'rgba(255, 255, 255, 0.08)');
+        root.style.setProperty('--tile-border', 'rgba(255, 255, 255, 0.12)');
+        root.style.setProperty('--tile-hover', 'rgba(255, 255, 255, 0.18)');
     }
 }
 
