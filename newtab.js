@@ -132,10 +132,87 @@ function renderPinnedSites() {
     pinnedGrid.appendChild(addCard);
 }
 
+// Drag and Drop Variables
+let draggedElement = null;
+let draggedIndex = null;
+
+function handleDragStart(e) {
+    draggedElement = e.currentTarget;
+    draggedIndex = parseInt(draggedElement.dataset.index, 10);
+    
+    draggedElement.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', draggedIndex);
+}
+
+function handleDragOver(e) {
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    const target = e.currentTarget;
+    if (target.classList.contains('pin-card') && !target.classList.contains('pin-add') && target !== draggedElement) {
+        target.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    e.currentTarget.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    if (e.stopPropagation) {
+        e.stopPropagation();
+    }
+    if (e.preventDefault) {
+        e.preventDefault();
+    }
+    
+    const target = e.currentTarget;
+    target.classList.remove('drag-over');
+    
+    // Don't allow drop on add button or self
+    if (target.classList.contains('pin-add') || target === draggedElement) {
+        return false;
+    }
+    
+    const dropIndex = parseInt(target.dataset.index, 10);
+    
+    // Reorder the pinnedSites array
+    if (draggedIndex !== dropIndex) {
+        const draggedSite = pinnedSites[draggedIndex];
+        pinnedSites.splice(draggedIndex, 1);
+        pinnedSites.splice(dropIndex, 0, draggedSite);
+        
+        savePinnedSites();
+        renderPinnedSites();
+    }
+    
+    return false;
+}
+
+function handleDragEnd(e) {
+    e.currentTarget.classList.remove('dragging');
+    
+    // Clean up all drag-over states
+    document.querySelectorAll('.pin-card').forEach(card => {
+        card.classList.remove('drag-over');
+    });
+    
+    draggedElement = null;
+    draggedIndex = null;
+}
+
 function createPinCard(site, index) {
     const card = document.createElement('div');
     card.className = 'pin-card';
     card.setAttribute('role', 'listitem');
+    card.setAttribute('draggable', 'true');
+    card.dataset.index = index;
     const titleText = site.title || getHostname(site.url);
 
     // Link Wrapper (so clicking the card goes to site)
@@ -144,11 +221,14 @@ function createPinCard(site, index) {
     link.className = 'pin-link';
     link.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;';
     link.setAttribute('aria-label', `Open ${titleText}`);
+    link.setAttribute('draggable', 'false');
+    link.addEventListener('dragstart', (e) => e.preventDefault());
     
     // Icon
     const iconWrap = document.createElement('div');
     iconWrap.className = 'pin-icon';
     iconWrap.textContent = getSiteInitials(titleText);
+    iconWrap.setAttribute('draggable', 'false');
 
     const iconImg = document.createElement('img');
     iconImg.src = getFaviconUrl(site.url);
@@ -168,6 +248,7 @@ function createPinCard(site, index) {
     title.className = 'pin-title';
     title.textContent = titleText;
     title.title = titleText;
+    title.setAttribute('draggable', 'false');
 
     // Menu Trigger (3 dots)
     const menuBtn = document.createElement('button');
@@ -175,7 +256,9 @@ function createPinCard(site, index) {
     menuBtn.innerHTML = '⋮'; // entity
     menuBtn.setAttribute('aria-label', 'Options');
     menuBtn.setAttribute('aria-expanded', 'false');
+    menuBtn.setAttribute('draggable', 'false');
     menuBtn.style.zIndex = '2'; // Above link
+    menuBtn.addEventListener('mousedown', (e) => e.stopPropagation());
 
     // Menu Dropdown
     const menu = document.createElement('div');
@@ -237,11 +320,25 @@ function createPinCard(site, index) {
         }
     };
 
+    // Prevent link navigation during drag
+    let isDragging = false;
+    card.addEventListener('mousedown', () => { isDragging = false; });
+    card.addEventListener('mousemove', () => { isDragging = true; });
+    link.addEventListener('click', (e) => { if (isDragging) e.preventDefault(); });
+
     card.appendChild(link);
     card.appendChild(iconWrap);
     card.appendChild(title);
     card.appendChild(menuBtn);
     card.appendChild(menu);
+
+    // Drag and Drop Event Listeners
+    card.addEventListener('dragstart', handleDragStart);
+    card.addEventListener('dragover', handleDragOver);
+    card.addEventListener('drop', handleDrop);
+    card.addEventListener('dragenter', handleDragEnter);
+    card.addEventListener('dragleave', handleDragLeave);
+    card.addEventListener('dragend', handleDragEnd);
 
     return card;
 }

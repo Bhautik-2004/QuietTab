@@ -300,6 +300,7 @@ blockquote {
     flex-wrap: wrap;
     justify-content: center;
     gap: 12px;
+    transition: all 0.3s ease;
 }
 
 .pin-card {
@@ -319,10 +320,38 @@ blockquote {
     gap: 6px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     backdrop-filter: blur(8px);
-    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     /* overflow: hidden; Removed to allow menu overflow */
     flex-shrink: 0;
     z-index: 1; /* Base z-index */
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.pin-link {
+    pointer-events: auto;
+}
+
+.pin-card:active:not(.menu-open) {
+    cursor: grabbing;
+}
+
+.pin-card.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+    transform: scale(0.95);
+}
+
+.pin-card:not(.dragging):not(.pin-add) {
+    transition: all 0.3s ease;
+}
+
+.pin-card.drag-over {
+    transform: scale(1.1);
+    border-color: rgba(255, 255, 255, 0.6);
+    background: var(--tile-hover);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
 }
 
 /* Elevate card when menu is open so it overlaps neighbors */
